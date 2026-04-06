@@ -1,1 +1,0 @@
-# API Endpoint Errors Fix\n\nStatus: Step 2 Complete (API_BASE_URL fixed to default '/')\n\n## Next Steps:\n1. Test: `npm run dev`, try login → check network tab (expect /api/* proxied)\n2. If 502: Start backend at localhost:3000\n3. Verify no "undefined" URLs or network errors\n4. Mark complete
