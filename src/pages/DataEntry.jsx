@@ -21,13 +21,7 @@ const EMPTY_FORM = {
   wasteKg: '', wasteType: 'LANDFILL', flightKm: '', notes: '',
 };
 
-function calcScore(total, employees = 1) {
-  const p = total / Math.max(employees, 1);
-  if (p < 50)  return 'A';
-  if (p < 150) return 'B';
-  if (p < 300) return 'C';
-  return 'D';
-}
+
 
 function ScopeBlock({ title, color, icon: Icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -283,7 +277,8 @@ export default function DataEntry() {
                       <span className="font-bold text-sm text-slate-900">{(entry.totalEmissions ?? 0).toFixed(1)} kg CO₂e</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <ScoreBadge score={calcScore(entry.totalEmissions ?? 0, activeCompany.numberOfEmployees || 1)} />
+                      <ScoreBadge score={entry.score || '—'} />
+
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">

@@ -42,8 +42,10 @@ export default function CompanyForm() {
   const { addCompany, updateCompany } = useCompany();
 
   const [form,    setForm]    = useState(EMPTY);
+  const [businessNameValid, setBusinessNameValid] = useState(true);
   const [loading, setLoading] = useState(isEdit);
   const [saving,  setSaving]  = useState(false);
+
 
   useEffect(() => {
     if (!isEdit) return;
@@ -51,6 +53,7 @@ export default function CompanyForm() {
       try {
         const data = await companyApi.get(id);
         setForm({ ...EMPTY, ...data });
+        setBusinessNameValid(validateBusinessName(data.businessName));
       } catch (err) {
         toast.error(err.message);
         navigate('/dashboard/companies');
@@ -60,14 +63,32 @@ export default function CompanyForm() {
     })();
   }, [id, isEdit]);
 
-  const set = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }));
+  const validateBusinessName = useCallback((name) => {
+    const trimmed = name.trim();
+    const isValidFormat = /^[a-zA-Z\s\-']+$/i.test(trimmed);
+    return isValidFormat && trimmed.length >= 2;
+  }, []);
+
+
+  const set = (field) => (e) => {
+    if (field === 'businessName') {
+      const val = e.target.value;
+      setForm(p => ({ ...p, [field]: val }));
+      setBusinessNameValid(validateBusinessName(val));
+    } else {
+      setForm(p => ({ ...p, [field]: e.target.value }));
+    }
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.businessName.trim()) return toast.error('Business name is required.');
+    if (!businessNameValid) return toast.error('Business name must only contain letters, spaces, hyphens, apostrophes and be at least 2 characters.');
     setSaving(true);
     try {
       const payload = { ...form, numberOfEmployees: parseInt(form.numberOfEmployees) || 1 };
+
       if (isEdit) {
         const updated = await companyApi.update(id, payload);
         updateCompany(updated);
@@ -103,8 +124,21 @@ export default function CompanyForm() {
               <div className="space-y-4">
                 <div>
                   <FieldLabel required>Business Name</FieldLabel>
-                  <Input value={form.businessName} onChange={set('businessName')} placeholder="Ketepa Tea Ltd" required />
+                  <Input 
+                    value={form.businessName} 
+                    onChange={set('businessName')} 
+                    placeholder="Ketepa Tea Ltd" 
+                    required 
+                    className={`${
+                      !businessNameValid && form.businessName.trim() 
+                        ? 'border-red-300 ring-red-200 bg-red-50 focus:ring-red-500' 
+                        : ''
+                    }`}
+                  />
                 </div>
+
+
+
                 <div>
                   <FieldLabel>Industry Type</FieldLabel>
                   <Select value={form.industryType} onChange={set('industryType')}>

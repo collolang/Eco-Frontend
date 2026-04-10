@@ -12,22 +12,7 @@ import { LoadingState, ErrorState, Card, Badge, ScoreBadge } from '../components
 
 const SCOPE_COLORS = ['#16a34a', '#0ea5e9', '#f59e0b'];
 
-function predictNextMonth(monthly) {
-  const nonZero = monthly.filter(m => m.emissions > 0);
-  if (nonZero.length < 2) return null;
-  const last = nonZero.slice(-3);
-  const avg  = last.reduce((s, m) => s + m.emissions, 0) / last.length;
-  const trend = last[last.length - 1].emissions > last[0].emissions ? 'increasing' : 'decreasing';
-  return { predicted: Math.round(avg), trend, confidence: nonZero.length >= 4 ? 'high' : 'medium' };
-}
 
-function greenScore(total, employees = 1) {
-  const per = total / Math.max(employees, 1);
-  if (per < 50)  return { score: 'A', description: 'Excellent — Environmental leader',       perEmployee: per.toFixed(1) };
-  if (per < 150) return { score: 'B', description: 'Good — On the right track',              perEmployee: per.toFixed(1) };
-  if (per < 300) return { score: 'C', description: 'Average — Room for improvement',          perEmployee: per.toFixed(1) };
-  return             { score: 'D', description: 'Poor — Significant improvement needed',   perEmployee: per.toFixed(1) };
-}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -66,20 +51,22 @@ function NoCompany({ onAdd }) {
 export default function DashboardPanel() {
   const { activeCompany } = useCompany();
   const navigate = useNavigate();
-  const [state, setState] = useState({ loading: true, error: null, monthly: [], breakdown: [], yearly: [], total: 0 });
+const [state, setState] = useState({ loading: true, error: null, monthly: [], breakdown: [], yearly: [], total: 0, score: {}, prediction: null });
 
   useEffect(() => {
     if (!activeCompany) { setState(s => ({ ...s, loading: false })); return; }
     setState(s => ({ ...s, loading: true, error: null }));
     (async () => {
       try {
-        const [monthly, breakdown, yearly, total] = await Promise.all([
+        const [monthly, breakdown, yearly, total, score, prediction] = await Promise.all([
           emissionsApi.getMonthlyData(activeCompany.id),
           emissionsApi.getBreakdownData(activeCompany.id),
           emissionsApi.getYearlyComparison(activeCompany.id),
           emissionsApi.getTotalEmissions(activeCompany.id),
+          emissionsApi.getScore(activeCompany.id),
+          emissionsApi.getPrediction(activeCompany.id),
         ]);
-        setState({ loading: false, error: null, monthly, breakdown, yearly, total: total || 0 });
+        setState({ loading: false, error: null, monthly, breakdown, yearly, total: total || 0, score: score || {}, prediction: prediction || null });
       } catch (err) {
         setState(s => ({ ...s, loading: false, error: err.message }));
       }
@@ -90,8 +77,8 @@ export default function DashboardPanel() {
   if (state.loading)  return <LoadingState message="Loading dashboard data…" />;
   if (state.error)    return <ErrorState message={state.error} onRetry={() => window.location.reload()} />;
 
-  const gs   = greenScore(state.total, activeCompany.numberOfEmployees || 1);
-  const pred = predictNextMonth(state.monthly);
+  const gs = state.score;
+  const pred = state.prediction;
   const scoreColors = { A: '#16a34a', B: '#0ea5e9', C: '#f59e0b', D: '#ef4444' };
 
   return (

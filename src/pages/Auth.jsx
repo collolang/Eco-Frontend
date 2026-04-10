@@ -1,7 +1,7 @@
 // src/pages/Auth.jsx
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Mail, Lock, Eye, EyeOff, User, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Leaf, Mail, Lock, Eye, EyeOff, User, ArrowLeft, AlertCircle, Check, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -18,24 +18,81 @@ export default function Auth() {
   // Login form
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [showLoginPass, setShowLoginPass] = useState(false);
+  
+  // Login password strength
+  const [loginPasswordRules, setLoginPasswordRules] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false
+  });
+  const loginAllValid = Object.values(loginPasswordRules).every(Boolean);
 
   // Register form
   const [regData, setRegData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
   const [showRegPass, setShowRegPass]   = useState(false);
   const [showRegConf, setShowRegConf]   = useState(false);
   const [termsAccepted, setTerms]       = useState(false);
+  
+  // Password strength validation for register
+  const [passwordRules, setPasswordRules] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false
+  });
+  
+  // Name validation for register
+  const [nameRules, setNameRules] = useState({
+    firstNameValid: true,
+    lastNameValid: true
+  });
+
+  
+  const allPasswordValid = Object.values(passwordRules).every(Boolean);
+
+  const validatePassword = useCallback((password) => {
+    const hasLength = password.length >= 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    return {
+      length: hasLength,
+      uppercase: hasUpper,
+      lowercase: hasLower,
+      number: hasNumber,
+      special: hasSpecial
+    };
+  }, []);
+
+  const validateName = useCallback((name) => {
+    const trimmed = name.trim();
+    const isValidFormat = /^[a-zA-Z\s\-']+$/i.test(trimmed);
+    return isValidFormat && trimmed.length >= 2;
+  }, []);
+
 
   const switchTab = (t) => { setTab(t); setError(''); };
 
   async function handleLogin(e) {
     e.preventDefault();
+    if (!loginAllValid) {
+      toast.error('Password must meet all strength requirements.');
+      setError('Password must meet all strength requirements.');
+      return;
+    }
     setError(''); setLoading(true);
     try {
       await login(loginData.email, loginData.password);
       toast.success('Welcome back! 🌿');
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      const errorMsg = err.message || 'Login failed. Please try again.';
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -44,9 +101,27 @@ export default function Auth() {
   async function handleRegister(e) {
     e.preventDefault();
     setError('');
-    if (regData.password !== regData.confirmPassword) return setError('Passwords do not match.');
-    if (!termsAccepted) return setError('Please accept the Terms & Conditions.');
-    if (regData.password.length < 8) return setError('Password must be at least 8 characters.');
+    if (!nameRules.firstNameValid || !nameRules.lastNameValid) {
+      toast.error('Name fields must only contain letters, spaces, hyphens, apostrophes and be at least 2 characters.');
+      setError('Name fields must only contain letters, spaces, hyphens, apostrophes and be at least 2 characters.');
+      return;
+    }
+    if (!allPasswordValid) {
+      toast.error('Password must meet all strength requirements.');
+      setError('Password must meet all strength requirements.');
+      return;
+    }
+
+    if (regData.password !== regData.confirmPassword) {
+      toast.error('Passwords do not match.');
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!termsAccepted) {
+      toast.error('Please accept the Terms & Conditions.');
+      setError('Please accept the Terms & Conditions.');
+      return;
+    }
     setLoading(true);
     try {
       await register({
@@ -58,7 +133,9 @@ export default function Auth() {
       toast.success('Account created! Welcome to EcoTrack 🌿');
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      const errorMsg = err.message || 'Registration failed. Please try again.';
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -133,13 +210,52 @@ export default function Auth() {
                   <input
                     type={showLoginPass ? 'text' : 'password'} required
                     value={loginData.password}
-                    onChange={e => setLoginData(p => ({ ...p, password: e.target.value }))}
+                    onChange={e => {
+                      const newPassword = e.target.value;
+                      setLoginData(p => ({ ...p, password: newPassword }));
+                      const rules = validatePassword(newPassword);
+                      setLoginPasswordRules(rules);
+                    }}
                     placeholder="••••••••"
                     className="w-full pl-10 pr-11 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all"
                   />
                   <button type="button" onClick={() => setShowLoginPass(p => !p)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                     {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
+                </div>
+              </div>
+              
+              {/* Login Password Rules */}
+              <div className="mt-3 space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${loginPasswordRules.length ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {loginPasswordRules.length ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={loginPasswordRules.length ? 'text-slate-700 font-medium' : 'text-slate-500'}>At least 8 characters</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${loginPasswordRules.uppercase ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {loginPasswordRules.uppercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={loginPasswordRules.uppercase ? 'text-slate-700 font-medium' : 'text-slate-500'}>One uppercase letter (A-Z)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${loginPasswordRules.lowercase ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {loginPasswordRules.lowercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={loginPasswordRules.lowercase ? 'text-slate-700 font-medium' : 'text-slate-500'}>One lowercase letter (a-z)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${loginPasswordRules.number ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {loginPasswordRules.number ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={loginPasswordRules.number ? 'text-slate-700 font-medium' : 'text-slate-500'}>One number (0-9)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${loginPasswordRules.special ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {loginPasswordRules.special ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={loginPasswordRules.special ? 'text-slate-700 font-medium' : 'text-slate-500'}>One special character (!@#$%^&*() etc.)</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -149,7 +265,7 @@ export default function Auth() {
                 <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Forgot Password?</a>
               </div>
               <button
-                type="submit" disabled={loading}
+                type="submit" disabled={!loginAllValid || loading}
                 className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5"
               >
                 {loading ? 'Signing in…' : 'Login'}
@@ -174,10 +290,19 @@ export default function Auth() {
                     <input
                       type="text" required
                       value={regData.firstName}
-                      onChange={e => setRegData(p => ({ ...p, firstName: e.target.value }))}
-                      placeholder="Jane"
-                      className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 transition-all"
+                      onChange={e => {
+                        const val = e.target.value;
+                        setRegData(p => ({ ...p, firstName: val }));
+                        setNameRules(r => ({ ...r, firstNameValid: validateName(val) }));
+                      }}
+                      placeholder="Collins"
+                      className={`w-full pl-10 pr-3 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+                        !nameRules.firstNameValid && regData.firstName.trim()
+                          ? 'border-red-300 ring-red-200 bg-red-50 focus:ring-red-500' 
+                          : 'border-slate-200 focus:ring-leaf-500'
+                      }`}
                     />
+
                   </div>
                 </div>
                 <div>
@@ -187,15 +312,27 @@ export default function Auth() {
                     <input
                       type="text" required
                       value={regData.lastName}
-                      onChange={e => setRegData(p => ({ ...p, lastName: e.target.value }))}
-                      placeholder="Doe"
-                      className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 transition-all"
+                      onChange={e => {
+                        const val = e.target.value;
+                        setRegData(p => ({ ...p, lastName: val }));
+                        setNameRules(r => ({ ...r, lastNameValid: validateName(val) }));
+                      }}
+                      placeholder="Kiprono"
+                      className={`w-full pl-10 pr-3 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+                        !nameRules.lastNameValid && regData.lastName.trim()
+                          ? 'border-red-300 ring-red-200 bg-red-50 focus:ring-red-500' 
+                          : 'border-slate-200 focus:ring-leaf-500'
+                      }`}
                     />
+
                   </div>
                 </div>
               </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+
+
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <input
@@ -214,13 +351,54 @@ export default function Auth() {
                   <input
                     type={showRegPass ? 'text' : 'password'} required
                     value={regData.password}
-                    onChange={e => setRegData(p => ({ ...p, password: e.target.value }))}
+                    onChange={e => {
+                      const newPassword = e.target.value;
+                      setRegData(p => ({ ...p, password: newPassword }));
+                      
+                      // Validate password rules
+                      const rules = validatePassword(newPassword);
+                      setPasswordRules(rules);
+                    }}
                     placeholder="Min. 8 characters"
                     className="w-full pl-10 pr-11 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 transition-all"
                   />
                   <button type="button" onClick={() => setShowRegPass(p => !p)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                     {showRegPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
+                </div>
+              </div>
+              
+              {/* Password Rules */}
+              <div className="mt-3 space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${passwordRules.length ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {passwordRules.length ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={passwordRules.length ? 'text-slate-700 font-medium' : 'text-slate-500'}>At least 8 characters</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${passwordRules.uppercase ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {passwordRules.uppercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={passwordRules.uppercase ? 'text-slate-700 font-medium' : 'text-slate-500'}>One uppercase letter (A-Z)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${passwordRules.lowercase ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {passwordRules.lowercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={passwordRules.lowercase ? 'text-slate-700 font-medium' : 'text-slate-500'}>One lowercase letter (a-z)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${passwordRules.number ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {passwordRules.number ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={passwordRules.number ? 'text-slate-700 font-medium' : 'text-slate-500'}>One number (0-9)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${passwordRules.special ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {passwordRules.special ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={passwordRules.special ? 'text-slate-700 font-medium' : 'text-slate-500'}>One special character (!@#$%^&*() etc.)</span>
                 </div>
               </div>
               <div>
@@ -245,9 +423,10 @@ export default function Auth() {
                 <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Terms &amp; Conditions</a>
               </label>
               <button
-                type="submit" disabled={loading}
+                type="submit" disabled={!(nameRules.firstNameValid && nameRules.lastNameValid && allPasswordValid) || loading}
                 className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5"
               >
+
                 {loading ? 'Creating account…' : 'Create Account'}
               </button>
               <p className="text-center text-sm text-slate-500">

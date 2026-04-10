@@ -50,12 +50,12 @@ export default function Landing() {
                 Start Tracking Free
                 <ArrowRight className="w-4 h-4" />
               </button>
-              <button
+              {/* <button
                 onClick={() => navigate('/auth?mode=login')}
                 className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-7 py-3.5 rounded-xl font-bold text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
               >
                 View Demo
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export default function Landing() {
       </section>
 
       {/* Stats */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      {/* <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="bg-leaf-600 rounded-2xl p-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
             { value: '10,000+', label: 'Active Users' },
@@ -133,7 +133,7 @@ export default function Landing() {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
