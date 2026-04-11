@@ -12,7 +12,7 @@ import { LoadingState, ErrorState, Card, Badge, ScoreBadge } from '../components
 
 const SCOPE_COLORS = ['#16a34a', '#0ea5e9', '#f59e0b'];
 
-
+//  pred?.predicted ?? '—'
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -64,7 +64,9 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
           emissionsApi.getYearlyComparison(activeCompany.id),
           emissionsApi.getTotalEmissions(activeCompany.id),
           emissionsApi.getScore(activeCompany.id),
-          emissionsApi.getPrediction(activeCompany.id),
+          // emissionsApi.getPrediction(activeCompany.id),
+          emissionsApi.getPrediction(activeCompany.id, new Date().getFullYear()),
+
         ]);
 
         const unwrap = (r, fallback) => (r.status === 'fulfilled' ? r.value : fallback);
@@ -144,7 +146,7 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
             <TrendingDown className="w-4 h-4 text-slate-300" />
           </div>
           <div>
-            <p className="font-display text-2xl font-extrabold text-slate-900">{gs.perEmployee ?? '—'} kg</p>
+            <p className="font-display text-2xl font-extrabold text-slate-900">{gs.emissionsPerEmployee ?? '—'} kg</p>
             {pred && (
               <div className="flex items-center gap-1 mt-1">
                 {pred.trend === 'decreasing'
@@ -163,7 +165,8 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
           </div>
           <div>
             <p className="font-display text-2xl font-extrabold text-slate-900">
-              {pred?.predicted ?? '—'}
+              {pred?.predictedEmissions ?? '—'}
+             
             </p>
             <p className="text-slate-500 text-xs mt-1">
               {pred ? `${pred.confidence} confidence` : 'Need more data'}
