@@ -277,7 +277,7 @@ export default function DataEntry() {
                       <span className="font-bold text-sm text-slate-900">{(entry.totalEmissions ?? 0).toFixed(1)} kg CO₂e</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <ScoreBadge score={entry.score || '—'} />
+                      <ScoreBadge score={entry.score ?? '—'} />
 
                     </td>
                     <td className="px-5 py-3.5">

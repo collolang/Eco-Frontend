@@ -1,23 +1,23 @@
-// src/pages/Auth.jsx
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Mail, Lock, Eye, EyeOff, User, ArrowLeft, AlertCircle, Check, CheckCircle, XCircle } from 'lucide-react';
+import { Leaf, Mail, Lock, Eye, EyeOff, User, ArrowLeft, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export default function Auth() {
-  const navigate      = useNavigate();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login, register } = useAuth();
-  const toast         = useToast();
+  const toast = useToast();
 
-  const [tab, setTab]   = useState(searchParams.get('mode') === 'register' ? 'register' : 'login');
+  const [tab, setTab] = useState(searchParams.get('mode') === 'register' ? 'register' : 'login');
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
   // Login form
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [showLoginPass, setShowLoginPass] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   
   // Login password strength
   const [loginPasswordRules, setLoginPasswordRules] = useState({
@@ -31,9 +31,9 @@ export default function Auth() {
 
   // Register form
   const [regData, setRegData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
-  const [showRegPass, setShowRegPass]   = useState(false);
-  const [showRegConf, setShowRegConf]   = useState(false);
-  const [termsAccepted, setTerms]       = useState(false);
+  const [showRegPass, setShowRegPass] = useState(false);
+  const [showRegConf, setShowRegConf] = useState(false);
+  const [termsAccepted, setTerms] = useState(false);
   
   // Password strength validation for register
   const [passwordRules, setPasswordRules] = useState({
@@ -50,7 +50,6 @@ export default function Auth() {
     lastNameValid: true
   });
 
-  
   const allPasswordValid = Object.values(passwordRules).every(Boolean);
 
   const validatePassword = useCallback((password) => {
@@ -74,8 +73,22 @@ export default function Auth() {
     return isValidFormat && trimmed.length >= 2;
   }, []);
 
-
   const switchTab = (t) => { setTab(t); setError(''); };
+
+  useEffect(() => {
+    if (tab === 'login') {
+      try {
+        const saved = localStorage.getItem('loginCredentials');
+        if (saved) {
+          const { email, password, remember } = JSON.parse(saved);
+          setLoginData({ email, password });
+          setRememberMe(remember || false);
+        }
+      } catch {
+        localStorage.removeItem('loginCredentials');
+      }
+    }
+  }, [tab]);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -84,9 +97,21 @@ export default function Auth() {
       setError('Password must meet all strength requirements.');
       return;
     }
-    setError(''); setLoading(true);
+    setError('');
+    setLoading(true);
     try {
       await login(loginData.email, loginData.password);
+      if (rememberMe) {
+        try {
+          localStorage.setItem('loginCredentials', JSON.stringify({
+            email: loginData.email,
+            password: loginData.password,
+            remember: true
+          }));
+        } catch {}
+      } else {
+        localStorage.removeItem('loginCredentials');
+      }
       toast.success('Welcome back! 🌿');
       navigate('/dashboard');
     } catch (err) {
@@ -126,9 +151,9 @@ export default function Auth() {
     try {
       await register({
         firstName: regData.firstName,
-        lastName:  regData.lastName,
-        email:     regData.email,
-        password:  regData.password,
+        lastName: regData.lastName,
+        email: regData.email,
+        password: regData.password,
       });
       toast.success('Account created! Welcome to EcoTrack 🌿');
       navigate('/dashboard');
@@ -258,10 +283,7 @@ export default function Auth() {
                   <span className={loginPasswordRules.special ? 'text-slate-700 font-medium' : 'text-slate-500'}>One special character (!@#$%^&*() etc.)</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-600">
-                  <input type="checkbox" className="accent-leaf-600 w-4 h-4" /> Remember me
-                </label>
+              <div className="flex items-center justify-end text-sm">
                 <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Forgot Password?</a>
               </div>
               <button
@@ -302,7 +324,6 @@ export default function Auth() {
                           : 'border-slate-200 focus:ring-leaf-500'
                       }`}
                     />
-
                   </div>
                 </div>
                 <div>
@@ -324,15 +345,12 @@ export default function Auth() {
                           : 'border-slate-200 focus:ring-leaf-500'
                       }`}
                     />
-
                   </div>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
-
-
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <input
@@ -354,8 +372,6 @@ export default function Auth() {
                     onChange={e => {
                       const newPassword = e.target.value;
                       setRegData(p => ({ ...p, password: newPassword }));
-                      
-                      // Validate password rules
                       const rules = validatePassword(newPassword);
                       setPasswordRules(rules);
                     }}
@@ -420,13 +436,12 @@ export default function Auth() {
               <label className="flex items-start gap-2.5 text-sm cursor-pointer text-slate-600">
                 <input type="checkbox" checked={termsAccepted} onChange={e => setTerms(e.target.checked)} className="accent-leaf-600 w-4 h-4 mt-0.5 shrink-0" />
                 I agree to the{' '}
-                <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Terms &amp; Conditions</a>
+                <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Terms & Conditions</a>
               </label>
               <button
                 type="submit" disabled={!(nameRules.firstNameValid && nameRules.lastNameValid && allPasswordValid) || loading}
                 className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5"
               >
-
                 {loading ? 'Creating account…' : 'Create Account'}
               </button>
               <p className="text-center text-sm text-slate-500">

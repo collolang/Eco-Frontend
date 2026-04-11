@@ -58,7 +58,7 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
     setState(s => ({ ...s, loading: true, error: null }));
     (async () => {
       try {
-        const [monthly, breakdown, yearly, total, score, prediction] = await Promise.all([
+        const results = await Promise.allSettled([
           emissionsApi.getMonthlyData(activeCompany.id),
           emissionsApi.getBreakdownData(activeCompany.id),
           emissionsApi.getYearlyComparison(activeCompany.id),
@@ -66,7 +66,17 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
           emissionsApi.getScore(activeCompany.id),
           emissionsApi.getPrediction(activeCompany.id),
         ]);
-        setState({ loading: false, error: null, monthly, breakdown, yearly, total: total || 0, score: score || {}, prediction: prediction || null });
+
+        const unwrap = (r, fallback) => (r.status === 'fulfilled' ? r.value : fallback);
+
+        const monthly = unwrap(results[0], []);
+        const breakdown = unwrap(results[1], []);
+        const yearly = unwrap(results[2], []);
+        const total = unwrap(results[3], 0) || 0;
+        const score = unwrap(results[4], {}) || {};
+        const prediction = unwrap(results[5], null);
+
+        setState({ loading: false, error: null, monthly, breakdown, yearly, total, score, prediction });
       } catch (err) {
         setState(s => ({ ...s, loading: false, error: err.message }));
       }
@@ -77,9 +87,12 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
   if (state.loading)  return <LoadingState message="Loading dashboard data…" />;
   if (state.error)    return <ErrorState message={state.error} onRetry={() => window.location.reload()} />;
 
-  const gs = state.score;
-  const pred = state.prediction;
+  const gs = state.score || {};
+  const pred = state.prediction || null;
   const scoreColors = { A: '#16a34a', B: '#0ea5e9', C: '#f59e0b', D: '#ef4444' };
+  const scoreKey = gs.score;
+  const bgColor = scoreKey ? (scoreColors[scoreKey] + '1a') : 'transparent';
+  const textColor = scoreKey ? scoreColors[scoreKey] : '#64748b';
 
   return (
     <div className="space-y-6">
@@ -117,11 +130,11 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
           <div>
             <span
               className="inline-block px-3 py-1 rounded-full text-2xl font-extrabold font-display mb-1"
-              style={{ background: scoreColors[gs.score] + '1a', color: scoreColors[gs.score] }}
+              style={{ background: bgColor, color: textColor }}
             >
-              {gs.score}
+              {gs.score || '—'}
             </span>
-            <p className="text-slate-500 text-xs">{gs.description}</p>
+            <p className="text-slate-500 text-xs">{gs.description || ''}</p>
           </div>
         </Card>
 
@@ -131,7 +144,7 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
             <TrendingDown className="w-4 h-4 text-slate-300" />
           </div>
           <div>
-            <p className="font-display text-2xl font-extrabold text-slate-900">{gs.perEmployee} kg</p>
+            <p className="font-display text-2xl font-extrabold text-slate-900">{gs.perEmployee ?? '—'} kg</p>
             {pred && (
               <div className="flex items-center gap-1 mt-1">
                 {pred.trend === 'decreasing'
@@ -150,7 +163,7 @@ const [state, setState] = useState({ loading: true, error: null, monthly: [], br
           </div>
           <div>
             <p className="font-display text-2xl font-extrabold text-slate-900">
-              {pred ? `${pred.predicted} kg` : '—'}
+              {pred?.predicted ?? '—'}
             </p>
             <p className="text-slate-500 text-xs mt-1">
               {pred ? `${pred.confidence} confidence` : 'Need more data'}
