@@ -273,7 +273,7 @@ export default function Reports() {
                     className="flex items-center justify-center gap-2.5 p-4 border-2 border-leaf-300 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-all text-sm font-bold text-leaf-800"
                   >
                     <Printer className="w-5 h-5 text-leaf-600" />
-                    Download Farmer-Friendly PDF
+                    Download PDF
                   </button>
                   <button
                     onClick={() => {
