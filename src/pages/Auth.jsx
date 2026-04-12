@@ -71,6 +71,7 @@ export default function Auth() {
     special: false
   });
   const resetAllValid = Object.values(resetPasswordRules).every(Boolean);
+  const resetPasswordsMatch = resetPassword === resetConfirmPassword;
 
   const allPasswordValid = Object.values(passwordRules).every(Boolean);
 
@@ -192,6 +193,61 @@ export default function Auth() {
     }
   }
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(forgotEmail)) {
+      toast.error('Please enter a valid email address.');
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await authApi.forgotPassword(forgotEmail);
+      setForgotSubmitted(true);
+      toast.success('If an account exists, check your inbox for reset instructions (15 min expiry).');
+    } catch (err) {
+      const errorMsg = err.message || 'Failed to send reset email. Please try again.';
+      toast.error(errorMsg);
+      setError(errorMsg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!resetToken) {
+      toast.error('Invalid or missing reset token.');
+      setError('Invalid or missing reset token.');
+      return;
+    }
+    if (!resetAllValid) {
+      toast.error('New password must meet all strength requirements.');
+      setError('New password must meet all strength requirements.');
+      return;
+    }
+    if (!resetPasswordsMatch) {
+      toast.error('Passwords do not match.');
+      setError('Passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await authApi.resetPassword(resetToken, resetPassword);
+      toast.success('Password reset successful! Redirecting...');
+      navigate('/dashboard');
+    } catch (err) {
+      const errorMsg = err.message || 'Password reset failed. Token may be expired.';
+      toast.error(errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-hero-gradient flex items-center justify-center p-4">
       <div className="w-full max-w-md page-enter">
@@ -218,9 +274,9 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Tab switcher */}
+        {/* Tab switcher (only show Login & Register by default) */}
         <div className="grid grid-cols-2 md:grid-cols-4 bg-slate-100 rounded-xl p-1 mb-6">
-          {['login', 'register', 'forgot', 'reset'].map(t => (
+          {['login', 'register'].map(t => (
             <button
               key={t}
               onClick={() => switchTab(t)}
@@ -314,7 +370,7 @@ export default function Auth() {
               </div>
               {/* ------------------------------------------------------------------------------------------------------- */}
               <div className="flex items-center justify-end text-sm">
-                <button type="button" onClick={() => navigate('/auth?mode=forgot')} className="text-leaf-600 hover:text-leaf-700 font-semibold">
+                <button type="button" onClick={() => switchTab('forgot')} className="text-leaf-600 hover:text-leaf-700 font-semibold">
                   Forgot Password?
                 </button>
               </div>
@@ -480,6 +536,189 @@ export default function Auth() {
                 Have an account?{' '}
                 <button type="button" onClick={() => switchTab('login')} className="text-leaf-600 font-semibold hover:text-leaf-700">
                   Login here →
+                </button>
+              </p>
+            </form>
+          )}
+          {/* ── FORGOT PASSWORD ── */}
+          {tab === 'forgot' && (
+            <>
+              {!forgotSubmitted ? (
+                <form onSubmit={handleForgotPassword} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <input
+                        type="email"
+                        required
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                  >
+                    {forgotLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Reset Link'
+                    )}
+                  </button>
+                  <p className="text-center text-sm text-slate-500">
+                    <button type="button" onClick={() => switchTab('login')} className="text-leaf-600 font-semibold hover:text-leaf-700">
+                      ← Back to Login
+                    </button>
+                  </p>
+                </form>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">Check Your Email</h3>
+                  <p className="text-slate-600 mb-6 max-w-sm mx-auto">
+                    We've sent a password reset link to <strong>{forgotEmail}</strong>.
+                    It expires in 15 minutes.
+                  </p>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => switchTab('login')}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm transition-all duration-200"
+                    >
+                      Back to Login
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotSubmitted(false);
+                        setForgotEmail('');
+                      }}
+                      className="w-full text-leaf-600 hover:bg-leaf-50 py-3 rounded-xl font-bold text-sm transition-all border border-leaf-200"
+                    >
+                      Resend Email
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── RESET PASSWORD ── */}
+          {tab === 'reset' && (
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type={showResetPass ? 'text' : 'password'}
+                    required
+                    value={resetPassword}
+                    onChange={(e) => {
+                      const newPassword = e.target.value;
+                      setResetPassword(newPassword);
+                      const rules = validatePassword(newPassword);
+                      setResetPasswordRules(rules);
+                    }}
+                    placeholder="New password (min 8 chars)"
+                    className="w-full pl-10 pr-11 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPass(!showResetPass)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showResetPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Reset Password Rules */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${resetPasswordRules.length ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {resetPasswordRules.length ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={resetPasswordRules.length ? 'text-slate-700 font-medium' : 'text-slate-500'}>8+ characters</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${resetPasswordRules.uppercase ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {resetPasswordRules.uppercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={resetPasswordRules.uppercase ? 'text-slate-700 font-medium' : 'text-slate-500'}>Uppercase (A-Z)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${resetPasswordRules.lowercase ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {resetPasswordRules.lowercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={resetPasswordRules.lowercase ? 'text-slate-700 font-medium' : 'text-slate-500'}>Lowercase (a-z)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${resetPasswordRules.number ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {resetPasswordRules.number ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={resetPasswordRules.number ? 'text-slate-700 font-medium' : 'text-slate-500'}>Number (0-9)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-sm ${resetPasswordRules.special ? 'text-green-500 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                    {resetPasswordRules.special ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                  </span>
+                  <span className={resetPasswordRules.special ? 'text-slate-700 font-medium' : 'text-slate-500'}>Special char</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Confirm New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type={showResetConf ? 'text' : 'password'}
+                    required
+                    value={resetConfirmPassword}
+                    onChange={(e) => setResetConfirmPassword(e.target.value)}
+                    placeholder="Repeat new password"
+                    className="w-full pl-10 pr-11 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConf(!showResetConf)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showResetConf ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {!resetPasswordsMatch && resetConfirmPassword && (
+                  <p className="text-xs text-red-600 mt Ascending ml-1">Passwords do not match</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={!resetAllValid || !resetPasswordsMatch || loading}
+                className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity Ascending text-white py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className Ascending="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  'Reset Password'
+                )}
+              </button>
+              <p className="text-center text-sm text-slate Ascending">
+                <button type="button" onClick={() => switchTab('login')} className="text-leaf Ascending font-semibold hover:text-leaf-700">
+                  ← Back to Login
                 </button>
               </p>
             </form>
