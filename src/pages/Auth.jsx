@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Mail, Lock, Eye, EyeOff, User, ArrowLeft, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Leaf, Mail, Lock, Eye, EyeOff, User, ArrowLeft, AlertCircle, CheckCircle, XCircle, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { authApi } from '../services/api';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -10,7 +11,8 @@ export default function Auth() {
   const { login, register } = useAuth();
   const toast = useToast();
 
-  const [tab, setTab] = useState(searchParams.get('mode') === 'register' ? 'register' : 'login');
+  const mode = searchParams.get('mode') || 'login';
+  const [tab, setTab] = useState(['forgot', 'reset'].includes(mode) ? mode : (mode === 'register' ? 'register' : 'login'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,6 +52,26 @@ export default function Auth() {
     lastNameValid: true
   });
 
+  // Forgot password form
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitted, setForgotSubmitted] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  // Reset password form
+  const [resetToken, setResetToken] = useState(searchParams.get('token') || '');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [showResetPass, setShowResetPass] = useState(false);
+  const [showResetConf, setShowResetConf] = useState(false);
+  const [resetPasswordRules, setResetPasswordRules] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false
+  });
+  const resetAllValid = Object.values(resetPasswordRules).every(Boolean);
+
   const allPasswordValid = Object.values(passwordRules).every(Boolean);
 
   const validatePassword = useCallback((password) => {
@@ -73,7 +95,11 @@ export default function Auth() {
     return isValidFormat && trimmed.length >= 2;
   }, []);
 
-  const switchTab = (t) => { setTab(t); setError(''); };
+  const switchTab = (t) => { 
+    setTab(t); 
+    setError(''); 
+    setForgotSubmitted(false);
+  };
 
   useEffect(() => {
     if (tab === 'login') {
@@ -185,21 +211,24 @@ export default function Auth() {
           </div>
           <h1 className="font-display text-2xl font-bold text-slate-900">EcoTrack</h1>
           <p className="text-slate-500 text-sm mt-1">
-            {tab === 'login' ? 'Sign in to your account' : 'Create your free account'}
+            {tab === 'login' ? 'Sign in to your account' : 
+             tab === 'register' ? 'Create your free account' :
+             tab === 'forgot' ? 'Reset your password' :
+             'Set your new password'}
           </p>
         </div>
 
         {/* Tab switcher */}
-        <div className="grid grid-cols-2 bg-slate-100 rounded-xl p-1 mb-6">
-          {['login', 'register'].map(t => (
+        <div className="grid grid-cols-2 md:grid-cols-4 bg-slate-100 rounded-xl p-1 mb-6">
+          {['login', 'register', 'forgot', 'reset'].map(t => (
             <button
               key={t}
               onClick={() => switchTab(t)}
-              className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all duration-200 ${
+              className={`py-2.5 rounded-lg font-semibold text-xs md:text-sm capitalize transition-all duration-200 ${
                 tab === t ? 'bg-white text-leaf-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              {t}
+              {t.replace(/^\w/, c => c.toUpperCase())}
             </button>
           ))}
         </div>
@@ -283,8 +312,11 @@ export default function Auth() {
                   <span className={loginPasswordRules.special ? 'text-slate-700 font-medium' : 'text-slate-500'}>One special character (!@#$%^&*() etc.)</span>
                 </div>
               </div>
+              {/* ------------------------------------------------------------------------------------------------------- */}
               <div className="flex items-center justify-end text-sm">
-                <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Forgot Password?</a>
+                <button type="button" onClick={() => navigate('/auth?mode=forgot')} className="text-leaf-600 hover:text-leaf-700 font-semibold">
+                  Forgot Password?
+                </button>
               </div>
               <button
                 type="submit" disabled={!loginAllValid || loading}

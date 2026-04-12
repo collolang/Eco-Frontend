@@ -29,9 +29,11 @@ function GuestRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/"           element={<Landing />} />
-      <Route path="/auth"       element={<GuestRoute><Auth /></GuestRoute>} />
-      <Route path="/dashboard/*" element={
+      <Route path="/"                element={<Landing />} />
+      <Route path="/auth"            element={<GuestRoute><Auth /></GuestRoute>} />
+      <Route path="/forgot-password" element={<Navigate to="/auth?mode=forgot" replace />} />
+      <Route path="/reset-password"  element={<Navigate to="/auth?mode=reset" replace />} />
+      <Route path="/dashboard/*"     element={
         <PrivateRoute>
           <CompanyProvider>
             <Dashboard />
