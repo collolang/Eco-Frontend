@@ -62,7 +62,7 @@ export default function Sidebar({ onClose }) {
             end={end}
             onClick={onClose}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-5 py-3 text-sm font-semibold transition-all duration-150 border-r-4 ${
+              `flex items-center gap-3 px-6 py-4 sm:px-5 sm:py-3 text-base sm:text-sm font-semibold transition-all duration-150 border-r-4 ${
                 isActive
                   ? 'bg-leaf-50 text-leaf-700 border-leaf-600'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border-transparent'

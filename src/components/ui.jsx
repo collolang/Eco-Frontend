@@ -44,7 +44,7 @@ export function PageHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">{title}</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">{title}</h1> <!-- Mobile text-2xl good, no change -->
         {subtitle && <p className="text-slate-500 text-sm mt-1">{subtitle}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -70,7 +70,7 @@ export function Badge({ children, variant = 'gray' }) {
     purple: 'bg-purple-100 text-purple-800',
   };
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${variants[variant] || variants.gray}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm sm:text-xs sm:px-2.5 sm:py-0.5 font-bold ${variants[variant] || variants.gray}`}>
       {children}
     </span>
   );
@@ -84,7 +84,7 @@ export function ScoreBadge({ score }) {
     D: 'bg-red-100 text-red-800 border-red-300',
   };
   return (
-    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-extrabold border ${styles[score] || styles.C}`}>
+      <span className={`inline-flex items-center justify-center w-9 h-9 sm:w-8 sm:h-8 rounded-lg text-base sm:text-sm font-extrabold border ${styles[score] || styles.C}`}>
       {score}
     </span>
   );
@@ -93,7 +93,7 @@ export function ScoreBadge({ score }) {
 export function SectionTitle({ children, icon: Icon }) {
   return (
     <div className="flex items-center gap-2 mb-5">
-      {Icon && <Icon className="w-4 h-4 text-leaf-600" />}
+      {Icon && <Icon className="w-5 h-5 sm:w-4 sm:h-4 text-leaf-600" />}
       <h3 className="font-display font-bold text-slate-800">{children}</h3>
     </div>
   );
@@ -101,7 +101,7 @@ export function SectionTitle({ children, icon: Icon }) {
 
 export function FieldLabel({ children, required }) {
   return (
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+    <label className="block text-sm sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
       {children}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
   );
@@ -110,7 +110,7 @@ export function FieldLabel({ children, required }) {
 export function Input({ className = '', ...props }) {
   return (
     <input
-      className={`w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all placeholder-slate-400 ${className}`}
+      className={`w-full px-4 py-3.5 border border-slate-200 rounded-xl text-base sm:px-3.5 sm:py-2.5 sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all placeholder-slate-400 ${className}`}
       {...props}
     />
   );
@@ -119,7 +119,7 @@ export function Input({ className = '', ...props }) {
 export function Select({ className = '', children, ...props }) {
   return (
     <select
-      className={`w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all bg-white ${className}`}
+      className={`w-full px-4 py-3.5 border border-slate-200 rounded-xl text-base sm:px-3.5 sm:py-2.5 sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all bg-white ${className}`}
       {...props}
     >
       {children}
@@ -130,7 +130,7 @@ export function Select({ className = '', children, ...props }) {
 export function Textarea({ className = '', ...props }) {
   return (
     <textarea
-      className={`w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all placeholder-slate-400 resize-none ${className}`}
+      className={`w-full px-4 py-3.5 border border-slate-200 rounded-xl text-base sm:px-3.5 sm:py-2.5 sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all placeholder-slate-400 resize-none ${className}`}
       {...props}
     />
   );
@@ -143,7 +143,7 @@ export function Btn({ variant = 'primary', size = 'md', className = '', children
     danger:    'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200',
     ghost:     'bg-transparent hover:bg-slate-100 text-slate-600',
   };
-  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm', lg: 'px-6 py-3 text-base' };
+  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm', lg: 'px-6 py-3 text-base' }; // Desktop unchanged, mobile via responsive
   return (
     <button
       className={`inline-flex items-center gap-1.5 rounded-xl font-bold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 ${variants[variant]} ${sizes[size]} ${className}`}

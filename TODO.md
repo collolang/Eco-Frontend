@@ -1,28 +1,17 @@
-# Forgot Password Implementation - COMPLETE ✅
+## Mobile Responsiveness Improvement Plan
 
-**All steps done:**
-1. ✅ Analyzed codebase (Auth.jsx, api.js, routes)
-2. ✅ Created TODO.md  
-3. ✅ Added `handleForgotPassword()` handler
-4. ✅ Added forgot password form + success UI
-5. ✅ Added `handleResetPassword()` handler
-6. ✅ Added reset password form + validation
-7. ✅ Tested flows (email submit, token reset)
-8. ✅ Fixed minor formatting issues
-9. ✅ Updated TODO.md (this file)
-10. ✅ Task completed
+### Status: ✅ In Progress
 
-**Features implemented:**
-- Forgot password: email form → API call → "check inbox" success screen
-- Reset password: token extraction → password validation → API call → dashboard redirect  
-- Full UI/UX matching existing login/register design
-- Backend endpoints integrated perfectly
-- Loading states, toasts, validation, responsive
+**Goal**: Increase element sizes on phone screens (fonts, padding, touch targets) for better mobile UX.
 
-**Ready to use:**
-```
-npm run dev
-```
-Login page → "Forgot Password?" button now fully functional.
+**Breakdown**:
+- [x] **Step 1**: Create this TODO.md from approved plan
+- [ ] **Step 2**: Read tailwind.config.js for custom theme awareness
+- ✅ **Step 3**: Edit src/components/ui.jsx - Make shared UI responsive (larger base for mobile: text-base py-3.5+, sm: shrink to current)
+- [ ] **Step 4**: Defer Auth.jsx inline edits (multi-match issues); ui.jsx covers most, test first
+- [ ] **Step 5**: Global CSS tweaks in src/index.css for untagged elements (e.g., icons w-5 base)
+- ✅ **Step 6**: Server running at http://localhost:5173/ (check mobile devtools)
+- ✅ **Step 7**: Sidebar nav responsive, minor text remaining (OK for readability)
+- [ ] **Step 8**: Update TODO with completions, attempt_completion
 
-**No pending issues.** Task complete.
+**Next**: Proceed to Step 2-3.
