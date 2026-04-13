@@ -521,11 +521,13 @@ export default function Auth() {
                   </button>
                 </div>
               </div>
+              {/* --------------------------------------------------------------------------------------------- */}
               <label className="flex items-start gap-2.5 text-sm cursor-pointer text-slate-600">
                 <input type="checkbox" checked={termsAccepted} onChange={e => setTerms(e.target.checked)} className="accent-leaf-600 w-4 h-4 mt-0.5 shrink-0" />
                 I agree to the{' '}
                 <a href="#" className="text-leaf-600 hover:text-leaf-700 font-semibold">Terms & Conditions</a>
               </label>
+              {/* ----------------------------------------------------------------------------------------------------------- */}
               <button
                 type="submit" disabled={!(nameRules.firstNameValid && nameRules.lastNameValid && allPasswordValid) || loading}
                 className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5"
